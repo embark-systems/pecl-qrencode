@@ -22,7 +22,7 @@ jobs:
           - linux
         include:
           # Linux
-          - { name: linux, ts: 'nts', compiler: 'gcc',   os: ubuntu-20.04 }
+          - { name: linux, ts: 'nts', compiler: 'gcc',   os: ubuntu-24.04 }
     steps:
       - uses: actions/checkout@v4
       - name: Set artifact name
