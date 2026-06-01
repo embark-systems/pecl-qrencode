@@ -35,7 +35,7 @@ jobs:
           php-version: ${{ matrix.php }}
       - name: Install dependencies
         if: runner.os == 'linux'
-        run: sudo apt install libqrencode-dev
+        run: sudo apt install libqrencode-dev libpng-dev
       - name: phpize
         run: phpize
       - name: Configure
