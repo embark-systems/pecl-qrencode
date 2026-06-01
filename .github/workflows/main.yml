@@ -24,7 +24,7 @@ jobs:
           # Linux
           - { name: linux, ts: 'nts', compiler: 'gcc',   os: ubuntu-24.04 }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Set artifact name
         id: setup-artifact
         run: |
