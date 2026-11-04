@@ -1,3 +1,12 @@
+Version 0.12 2026/11/04
+  - Fix qr_save() crashes caused by invalid arguments.
+  - qr_save() now returns false with a warning for invalid arguments,
+    including null size or margin, negative margin, and images wider than
+    1000000 pixels. Some of these calls used to return true.
+  - Rejected qr_save() calls no longer truncate an existing file.
+  - Fail in configure when png.h or libpng is missing.
+  - Add function documentation in English and Traditional Chinese.
+
 Version 0.11 2023/05/28
   - Fix temporary_file issue.
 
