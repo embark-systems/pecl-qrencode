@@ -36,6 +36,9 @@
     }
 typedef size_t zend_size_t;
 
+/* The largest image width and height that libpng accepts by default. */
+#define QR_MAX_IMAGE_WIDTH 1000000
+
 static int le_qr;
 
 typedef struct {
@@ -152,6 +155,7 @@ PHP_FUNCTION(qr_save) {
     long size = 3, margin = 4;
     int argc;
     FILE *fp = NULL;
+    const char *filename = NULL;
     png_structp png_ptr;
     png_infop info_ptr;
     unsigned char *row, *p, *q;
@@ -173,20 +177,24 @@ PHP_FUNCTION(qr_save) {
         QR_ZEND_FETCH_RESOURCE(qr, php_qrcode *, &link, -1,
                 "qr handle", le_qr);
 
+        // Validate every argument before opening the output, so that an invalid
+        // call cannot truncate an existing file.
         switch (argc) {
             case 4:
-                if (Z_TYPE_P(arg2) == IS_STRING) {
-                    // qr_save(resource $link, string $fn, int $size, int $margin);
-                    fp = VCWD_FOPEN(Z_STRVAL_P(arg2), "wb");
-                    if (!fp) {
-                        php_error_docref(NULL TSRMLS_CC, E_WARNING,
-                                "Unable to open '%s' for writing.",
-                                Z_STRVAL_P(arg2));
-                        RETURN_FALSE;
-                    }
-                    size = Z_LVAL_P(arg3);
-                    margin = Z_LVAL_P(arg4);
+                // qr_save(resource $link, string $fn, int $size, int $margin);
+                if (Z_TYPE_P(arg2) != IS_STRING) {
+                    php_error_docref(NULL TSRMLS_CC, E_WARNING,
+                            "should use type string as argument 2");
+                    RETURN_FALSE;
                 }
+                if (Z_TYPE_P(arg3) != IS_LONG || Z_TYPE_P(arg4) != IS_LONG) {
+                    php_error_docref(NULL TSRMLS_CC, E_WARNING,
+                            "should use type long as arguments 3 and 4 when pass 4 arguments");
+                    RETURN_FALSE;
+                }
+                filename = Z_STRVAL_P(arg2);
+                size = Z_LVAL_P(arg3);
+                margin = Z_LVAL_P(arg4);
                 break;
 
             case 3:
@@ -196,50 +204,69 @@ PHP_FUNCTION(qr_save) {
                             "should use type long as argument 2 when pass 3 arguments");
                     RETURN_FALSE;
                 }
-
-                fp = php_open_temporary_file(NULL, NULL, &path);
-                if (!fp) {
+                if (Z_TYPE_P(arg3) != IS_LONG) {
                     php_error_docref(NULL TSRMLS_CC, E_WARNING,
-                            "Unable to open temporary file for writing.");
+                            "should use type long as argument 3 when pass 3 arguments");
                     RETURN_FALSE;
                 }
-
                 size = Z_LVAL_P(arg2);
                 margin = Z_LVAL_P(arg3);
-                temp_file = 1;
-
                 break;
+
             case 2:
-                if (Z_TYPE_P(arg2) == IS_STRING) {
-                    fp = VCWD_FOPEN(Z_STRVAL_P(arg2), "wb");
-                    if (!fp) {
-                        php_error_docref(NULL TSRMLS_CC, E_WARNING,
-                                "Unable to open '%s' for writing.",
-                                Z_STRVAL_P(arg2));
-                        RETURN_FALSE;
-                    }
-                } else {
-                        php_error_docref(NULL TSRMLS_CC, E_WARNING,
-                                "should use type string as argument 2");
-                        RETURN_FALSE;
+                // qr_save(resource $link, string $fn);
+                if (Z_TYPE_P(arg2) != IS_STRING) {
+                    php_error_docref(NULL TSRMLS_CC, E_WARNING,
+                            "should use type string as argument 2");
+                    RETURN_FALSE;
                 }
+                filename = Z_STRVAL_P(arg2);
                 break;
 
             case 1:
-                fp = php_open_temporary_file(NULL, NULL, &path);
-
-                if (!fp) {
-                    php_error_docref(NULL TSRMLS_CC, E_WARNING,
-                            "Unable to open temporary file for writing.");
-                    RETURN_FALSE;
-                }
-                temp_file = 1;
-
+                // qr_save(resource $link);
                 break;
 
             case 0:
             default:
                 RETURN_FALSE;
+        }
+
+        if (size < 1) {
+            php_error_docref(NULL TSRMLS_CC, E_WARNING,
+                    "size must be greater than 0");
+            RETURN_FALSE;
+        }
+
+        if (margin < 0) {
+            php_error_docref(NULL TSRMLS_CC, E_WARNING,
+                    "margin must not be negative");
+            RETURN_FALSE;
+        }
+
+        // The order of these checks keeps the arithmetic from overflowing.
+        if (size > QR_MAX_IMAGE_WIDTH || margin > QR_MAX_IMAGE_WIDTH
+                || qr->c->width + margin * 2 > QR_MAX_IMAGE_WIDTH / size) {
+            php_error_docref(NULL TSRMLS_CC, E_WARNING,
+                    "image width must not exceed %d pixels", QR_MAX_IMAGE_WIDTH);
+            RETURN_FALSE;
+        }
+
+        if (filename) {
+            fp = VCWD_FOPEN(filename, "wb");
+            if (!fp) {
+                php_error_docref(NULL TSRMLS_CC, E_WARNING,
+                        "Unable to open '%s' for writing.", filename);
+                RETURN_FALSE;
+            }
+        } else {
+            fp = php_open_temporary_file(NULL, NULL, &path);
+            if (!fp) {
+                php_error_docref(NULL TSRMLS_CC, E_WARNING,
+                        "Unable to open temporary file for writing.");
+                RETURN_FALSE;
+            }
+            temp_file = 1;
         }
 
         realwidth = (qr->c->width + margin * 2) * size;
