@@ -28,6 +28,17 @@ if test "$PHP_QRENCODE" != "no"; then
 
   PHP_ADD_INCLUDE($QRENCODE_DIR/include)
 
+  old_CPPFLAGS=$CPPFLAGS
+  CPPFLAGS="$CPPFLAGS -I$QRENCODE_DIR/include"
+  AC_CHECK_HEADER([png.h], [], [
+    AC_MSG_ERROR([png.h not found. Please install the libpng development package])
+  ])
+  CPPFLAGS=$old_CPPFLAGS
+
+  PHP_CHECK_LIBRARY(png, png_create_write_struct, [], [
+    AC_MSG_ERROR([libpng not found. Please install the libpng development package])
+  ], [-L$QRENCODE_DIR/lib])
+
   PHP_SUBST(QRENCODE_SHARED_LIBADD)
   PHP_ADD_LIBRARY_WITH_PATH(png, $QRENCODE_DIR/lib, QRENCODE_SHARED_LIBADD)
   PHP_ADD_LIBRARY_WITH_PATH(qrencode, $QRENCODE_DIR/lib, QRENCODE_SHARED_LIBADD)
