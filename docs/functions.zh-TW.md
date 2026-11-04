@@ -2,7 +2,7 @@
 
 繁體中文 | [English](functions.md)
 
-本文件說明 extension 0.11 版。這個 extension 包裝
+本文件說明 extension 0.12 版。這個 extension 包裝
 [libqrencode](https://fukuchi.org/works/qrencode/)，提供兩個函式：
 
 - [`qr_encode()`](#qr_encode)：將字串編碼為 QR code。

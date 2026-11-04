@@ -2,7 +2,7 @@
 
 [繁體中文](functions.zh-TW.md) | English
 
-This reference describes extension version 0.11. The extension wraps
+This reference describes extension version 0.12. The extension wraps
 [libqrencode](https://fukuchi.org/works/qrencode/) and provides two functions:
 
 - [`qr_encode()`](#qr_encode) encodes a string as a QR code.
